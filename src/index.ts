@@ -11,12 +11,12 @@ type Options<T> = Partial<{
   syncData: boolean;
 }>;
 
-function useLocalStorage<T>(
+function useSessionStorage<T>(
   key: string,
   defaultValue: T,
   options?: Options<T>
 ): [T, Setter<T>];
-function useLocalStorage<T>(
+function useSessionStorage<T>(
   key: string,
   defaultValue?: T,
   options?: Options<T>
@@ -39,7 +39,7 @@ function useLocalStorage<T>(
     if (typeof window === "undefined") return defaultValue;
 
     try {
-      rawValueRef.current = window.localStorage.getItem(key);
+      rawValueRef.current = window.sessionStorage.getItem(key);
       const res: T = rawValueRef.current
         ? parser(rawValueRef.current)
         : defaultValue;
@@ -53,17 +53,15 @@ function useLocalStorage<T>(
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const updateLocalStorage = () => {
-      // Browser ONLY dispatch storage events to other tabs, NOT current tab.
-      // We need to manually dispatch storage event for current tab
+    const updateSessionStorage = () => {
       if (value !== undefined) {
         const newValue = serializer(value);
         const oldValue = rawValueRef.current;
         rawValueRef.current = newValue;
-        window.localStorage.setItem(key, newValue);
+        window.sessionStorage.setItem(key, newValue);
         window.dispatchEvent(
           new StorageEvent("storage", {
-            storageArea: window.localStorage,
+            storageArea: window.sessionStorage,
             url: window.location.href,
             key,
             newValue,
@@ -71,10 +69,10 @@ function useLocalStorage<T>(
           })
         );
       } else {
-        window.localStorage.removeItem(key);
+        window.sessionStorage.removeItem(key);
         window.dispatchEvent(
           new StorageEvent("storage", {
-            storageArea: window.localStorage,
+            storageArea: window.sessionStorage,
             url: window.location.href,
             key,
           })
@@ -83,7 +81,7 @@ function useLocalStorage<T>(
     };
 
     try {
-      updateLocalStorage();
+      updateSessionStorage();
     } catch (e) {
       logger(e);
     }
@@ -93,7 +91,7 @@ function useLocalStorage<T>(
     if (!syncData) return;
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key !== key || e.storageArea !== window.localStorage) return;
+      if (e.key !== key || e.storageArea !== window.sessionStorage) return;
 
       try {
         if (e.newValue !== rawValueRef.current) {
@@ -114,4 +112,4 @@ function useLocalStorage<T>(
   return [value, setValue];
 }
 
-export default useLocalStorage;
+export default useSessionStorage;
